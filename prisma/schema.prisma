@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Set {
+  id          String     @id @default(cuid())
+  setNum      String     @unique
+  name        String
+  year        Int?
+  theme       String?
+  numParts    Int?
+  imgUrl      String?
+  addedAt     DateTime   @default(now())
+  setParts    SetPart[]
+}
+
+model Part {
+  id          String     @id @default(cuid())
+  partNum     String
+  name        String
+  color       String     @default("unknown")
+  colorId     Int?
+  imgUrl      String?
+  setParts    SetPart[]
+
+  @@unique([partNum, colorId])
+}
+
+model SetPart {
+  id          String          @id @default(cuid())
+  set         Set             @relation(fields: [setId], references: [id], onDelete: Cascade)
+  setId       String
+  part        Part            @relation(fields: [partId], references: [id])
+  partId      String
+  quantity    Int             @default(1)
+  inventories Inventory[]
+
+  @@unique([setId, partId])
+}
+
+model Inventory {
+  id          String          @id @default(cuid())
+  setPart     SetPart         @relation(fields: [setPartId], references: [id], onDelete: Cascade)
+  setPartId   String          @unique
+  status      InventoryStatus @default(PRESENT)
+  quantityOwned Int           @default(0)
+  updatedAt   DateTime        @updatedAt
+}
+
+enum InventoryStatus {
+  PRESENT
+  MISSING
+  PARTIAL
+}

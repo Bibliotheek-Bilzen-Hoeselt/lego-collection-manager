@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧱 LEGO Collectiebeheer
 
-## Getting Started
+Een web-app om je LEGO-collectie te beheren en vermiste onderdelen bij te houden. Gebouwd voor gebruik op tablet, met grote knoppen en hoog contrast voor mensen met een motorische beperking.
 
-First, run the development server:
+## Functies
+
+- **Snel sets opzoeken** — zoek op naam, setnummer of thema
+- **Onderdelen per set** — zie alle onderdelen, markeer ze als aanwezig/gedeeltelijk/vermist met één tik
+- **Automatisch ingevuld** — set-informatie en onderdelen worden opgehaald via de [Rebrickable API](https://rebrickable.com/api/)
+- **Export naar CSV** — exporteer vermiste onderdelen per set of over alle sets heen
+- **Tablet-vriendelijk** — grote touch targets (min. 48×48px), duidelijke knoppen, hoog contrast
+
+## Installatie
+
+### 1. Clone & installeer
+
+```bash
+git clone <repo-url>
+cd lego-collection-manager
+npm install
+```
+
+### 2. Database instellen (Neon — gratis)
+
+1. Ga naar [neon.tech](https://neon.tech) en maak een gratis account
+2. Maak een nieuw project aan
+3. Kopieer de **Connection string** (postgresql://...)
+
+### 3. Rebrickable API key
+
+1. Ga naar [rebrickable.com](https://rebrickable.com/users/add/) en maak een gratis account
+2. Ga naar **Settings → API** en genereer een API key
+
+### 4. Environment variabelen
+
+Kopieer `.env.local.example` naar `.env.local` en vul in:
+
+```bash
+cp .env.local.example .env.local
+```
+
+```env
+DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/lego?sslmode=require"
+DIRECT_URL="postgresql://user:password@ep-xxx.neon.tech/lego?sslmode=require"
+REBRICKABLE_API_KEY="jouw_api_key"
+```
+
+### 5. Database migreren
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 6. Lokaal starten
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy op Vercel (gratis)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push naar GitHub
+2. Ga naar [vercel.com](https://vercel.com) → **New Project** → importeer je repo
+3. Voeg de environment variabelen toe in de Vercel dashboard:
+   - `DATABASE_URL`
+   - `REBRICKABLE_API_KEY`
+4. Deploy!
 
-## Learn More
+## Tech stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Next.js 16** (App Router)
+- **Prisma 7** + **Neon PostgreSQL** (serverless)
+- **Tailwind CSS**
+- **Rebrickable API** (LEGO data)
+- **Lucide React** (iconen)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Gebruik
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Set toevoegen**: tik op "Toevoegen" → voer setnummer in (bijv. `75192` of `10497-1`)
+2. **Onderdelen controleren**: tik op een set → tik op elk onderdeel om status te wisselen
+3. **Vermiste exporteren**: tik "Export CSV" op de set-pagina of op de "Vermist" tab
