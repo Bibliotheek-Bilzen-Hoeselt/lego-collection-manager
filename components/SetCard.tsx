@@ -7,6 +7,7 @@ import { Trash2, AlertTriangle, Package } from "lucide-react";
 
 interface SetCardProps {
   id: string;
+  slug: string;
   setNum: string;
   name: string;
   year?: number | null;
@@ -19,6 +20,7 @@ interface SetCardProps {
 
 export default function SetCard({
   id,
+  slug,
   setNum,
   name,
   year,
@@ -33,7 +35,7 @@ export default function SetCard({
   const handleDelete = async () => {
     if (!confirm(`Set "${name}" verwijderen uit je collectie?`)) return;
     setDeleting(true);
-    await fetch(`/api/sets/${id}`, { method: "DELETE" });
+    await fetch(`/api/sets/${slug}`, { method: "DELETE" });
     onDelete(id);
   };
 
@@ -41,7 +43,7 @@ export default function SetCard({
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-      <Link href={`/sets/${id}`} className="block">
+      <Link href={`/sets/${slug}`} className="block">
         <div className="relative h-40 bg-gray-50 flex items-center justify-center">
           {imgUrl ? (
             <Image

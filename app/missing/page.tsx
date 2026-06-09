@@ -20,6 +20,7 @@ interface MissingItem {
 interface GroupedSet {
   setId: string;
   setNum: string;
+  setSlug: string;
   setName: string;
   setImgUrl: string | null;
   items: MissingItem[];
@@ -33,11 +34,11 @@ export default function MissingPage() {
   useEffect(() => {
     fetch("/api/sets")
       .then((r) => r.json())
-      .then(async (sets: { id: string; setNum: string; name: string; imgUrl: string | null; missingParts: number }[]) => {
+      .then(async (sets: { id: string; setNum: string; slug: string; name: string; imgUrl: string | null; missingParts: number }[]) => {
         const withMissing = sets.filter((s) => s.missingParts > 0);
         const results = await Promise.all(
           withMissing.map(async (s) => {
-            const r = await fetch(`/api/sets/${s.id}/parts`);
+            const r = await fetch(`/api/sets/${s.slug}/parts`);
             const data = await r.json();
 
             const items: MissingItem[] = [
@@ -70,7 +71,7 @@ export default function MissingPage() {
                 })),
             ];
 
-            return { setId: s.id, setNum: s.setNum, setName: s.name, setImgUrl: s.imgUrl, items };
+            return { setId: s.id, setNum: s.setNum, setSlug: s.slug, setName: s.name, setImgUrl: s.imgUrl, items };
           })
         );
         setGroups(results.filter((g) => g.items.length > 0));
@@ -115,7 +116,7 @@ export default function MissingPage() {
               {/* Set header */}
               <div className="flex items-center gap-3 p-4 border-b border-gray-100">
                 <button
-                  onClick={() => router.push(`/sets/${group.setId}`)}
+                  onClick={() => router.push(`/sets/${group.setSlug}`)}
                   className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-70"
                 >
                   {group.setImgUrl && (

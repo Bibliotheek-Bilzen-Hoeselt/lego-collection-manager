@@ -15,6 +15,7 @@ model Set {
   numParts    Int?
   imgUrl      String?
   addedAt     DateTime     @default(now())
+  slug        String?      @unique
   setParts    SetPart[]
   setMinifigs SetMinifig[]
 }

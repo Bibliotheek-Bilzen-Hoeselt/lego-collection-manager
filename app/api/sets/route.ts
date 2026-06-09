@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchSet, fetchSetParts, fetchSetMinifigs, fetchThemeName } from "@/lib/rebrickable";
+import { generateSlug } from "@/lib/slugify";
 
 export async function GET() {
   const sets = await prisma.set.findMany({
@@ -25,6 +26,7 @@ export async function GET() {
     return {
       id: s.id,
       setNum: s.setNum,
+      slug: s.slug ?? generateSlug(s.setNum, s.name),
       name: s.name,
       year: s.year,
       theme: s.theme,
@@ -48,9 +50,14 @@ export async function POST(req: NextRequest) {
   // If set already exists, sync its minifigs and return
   const existing = await prisma.set.findUnique({ where: { setNum: setNum.trim() } });
   if (existing) {
+    // Backfill slug if missing, then return 409
+    const slug = existing.slug ?? generateSlug(existing.setNum, existing.name);
+    if (!existing.slug) {
+      await prisma.set.update({ where: { id: existing.id }, data: { slug } });
+    }
     await syncMinifigs(existing.id, existing.setNum);
     return NextResponse.json(
-      { error: "Set already in collection", id: existing.id },
+      { error: "Set already in collection", id: existing.id, slug },
       { status: 409 }
     );
   }
@@ -66,6 +73,7 @@ export async function POST(req: NextRequest) {
       theme: themeName,
       numParts: rbSet.num_parts,
       imgUrl: rbSet.set_img_url,
+      slug: generateSlug(rbSet.set_num, rbSet.name),
     },
   });
 
@@ -104,7 +112,7 @@ export async function POST(req: NextRequest) {
 
   await syncMinifigs(set.id, rbSet.set_num);
 
-  return NextResponse.json({ id: set.id, setNum: set.setNum, name: set.name }, { status: 201 });
+  return NextResponse.json({ id: set.id, setNum: set.setNum, slug: set.slug, name: set.name }, { status: 201 });
 }
 
 async function syncMinifigs(setId: string, setNum: string) {

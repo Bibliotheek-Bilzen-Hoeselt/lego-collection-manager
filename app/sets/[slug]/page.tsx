@@ -49,7 +49,7 @@ type Filter = "ALL" | "PRESENT" | "MISSING" | "PARTIAL";
 type View = "parts" | "minifigs";
 
 export default function SetDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const [set, setSet] = useState<SetDetail | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -58,10 +58,10 @@ export default function SetDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/sets/${id}/parts`)
+    fetch(`/api/sets/${slug}/parts`)
       .then((r) => { if (!r.ok) { router.push("/"); return null; } return r.json(); })
       .then((data) => { if (data) setSet(data); setLoading(false); });
-  }, [id, router]);
+  }, [slug, router]);
 
   const handlePartStatusChange = useCallback((setPartId: string, status: Status, quantityOwned: number) => {
     setSet((prev) => prev ? {

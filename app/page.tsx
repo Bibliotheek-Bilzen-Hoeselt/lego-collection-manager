@@ -8,6 +8,7 @@ import Link from "next/link";
 interface SetSummary {
   id: string;
   setNum: string;
+  slug: string;
   name: string;
   year: number | null;
   theme: string | null;

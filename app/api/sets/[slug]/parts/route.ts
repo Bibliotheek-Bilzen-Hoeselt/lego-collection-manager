@@ -3,12 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { id } = await params;
+  const { slug } = await params;
 
   const set = await prisma.set.findUnique({
-    where: { id },
+    where: { slug },
     include: {
       setParts: {
         include: { part: true, inventories: true },

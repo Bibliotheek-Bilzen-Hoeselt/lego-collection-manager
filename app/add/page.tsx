@@ -53,9 +53,8 @@ export default function AddSetPage() {
         body: JSON.stringify({ setNum: preview.setNum }),
       });
       const data = await res.json();
-      if (res.ok || (res.status === 409 && data.id)) {
-        // 409 = set already existed but we still got its id — navigate there
-        router.push(`/sets/${data.id}`);
+      if (res.ok || (res.status === 409 && data.slug)) {
+        router.push(`/sets/${data.slug}`);
       } else {
         throw new Error(data.error ?? "Toevoegen mislukt");
       }
