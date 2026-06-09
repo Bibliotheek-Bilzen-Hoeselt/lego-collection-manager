@@ -1,36 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/export?setId=xxx  — CSV of missing parts (all sets if no setId)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const setId = searchParams.get("setId");
 
+  // Missing parts
   const inventories = await prisma.inventory.findMany({
     where: {
       status: { in: ["MISSING", "PARTIAL"] },
-      setPart: {
-        setId: setId ?? undefined,
-      },
+      setPart: { setId: setId ?? undefined },
     },
     include: {
-      setPart: {
-        include: {
-          part: true,
-          set: true,
-        },
-      },
+      setPart: { include: { part: true, set: true } },
     },
     orderBy: [{ setPart: { set: { setNum: "asc" } } }, { setPart: { part: { name: "asc" } } }],
   });
 
-  if (inventories.length === 0) {
-    return new NextResponse("No missing parts found", { status: 200 });
+  // Missing minifigs
+  const missingMinifigs = await prisma.setMinifig.findMany({
+    where: {
+      status: "MISSING",
+      setId: setId ?? undefined,
+    },
+    include: {
+      minifig: true,
+      set: true,
+    },
+    orderBy: [{ set: { setNum: "asc" } }, { minifig: { name: "asc" } }],
+  });
+
+  if (inventories.length === 0 && missingMinifigs.length === 0) {
+    return new NextResponse("Geen vermiste onderdelen gevonden", { status: 200 });
   }
 
-  const rows = [
-    ["Set nummer", "Set naam", "Onderdeel nr", "Onderdeel naam", "Kleur", "Benodigde aantal", "Aanwezig aantal", "Status"],
+  const rows: (string | number)[][] = [
+    ["Type", "Set nummer", "Set naam", "Onderdeel/Minifig nr", "Naam", "Kleur", "Benodigde aantal", "Aanwezig aantal", "Status"],
     ...inventories.map((inv) => [
+      "Onderdeel",
       inv.setPart.set.setNum,
       inv.setPart.set.name,
       inv.setPart.part.partNum,
@@ -40,9 +47,22 @@ export async function GET(req: NextRequest) {
       inv.quantityOwned,
       inv.status,
     ]),
+    ...missingMinifigs.map((sm) => [
+      "Minifig",
+      sm.set.setNum,
+      sm.set.name,
+      sm.minifig.figNum,
+      sm.minifig.name,
+      "-",
+      sm.quantity,
+      0,
+      sm.status,
+    ]),
   ];
 
-  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const csv = rows
+    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
 
   const filename = setId ? `vermiste-onderdelen-set.csv` : `vermiste-onderdelen-alle-sets.csv`;
 

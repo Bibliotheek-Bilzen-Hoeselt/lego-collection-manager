@@ -52,12 +52,13 @@ export default function AddSetPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ setNum: preview.setNum }),
       });
-      if (!res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (res.ok || (res.status === 409 && data.id)) {
+        // 409 = set already existed but we still got its id — navigate there
+        router.push(`/sets/${data.id}`);
+      } else {
         throw new Error(data.error ?? "Toevoegen mislukt");
       }
-      const { id } = await res.json();
-      router.push(`/sets/${id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Onbekende fout");
       setAdding(false);

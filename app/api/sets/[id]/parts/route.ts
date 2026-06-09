@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/sets/[id]/parts — get all parts for a set with inventory status
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -12,11 +11,12 @@ export async function GET(
     where: { id },
     include: {
       setParts: {
-        include: {
-          part: true,
-          inventories: true,
-        },
+        include: { part: true, inventories: true },
         orderBy: [{ part: { color: "asc" } }, { part: { name: "asc" } }],
+      },
+      setMinifigs: {
+        include: { minifig: true },
+        orderBy: { minifig: { name: "asc" } },
       },
     },
   });
@@ -37,6 +37,16 @@ export async function GET(
     inventoryId: sp.inventories[0]?.id ?? null,
   }));
 
+  const minifigs = set.setMinifigs.map((sm) => ({
+    setMinifigId: sm.id,
+    figNum: sm.minifig.figNum,
+    name: sm.minifig.name,
+    numParts: sm.minifig.numParts,
+    imgUrl: sm.minifig.imgUrl,
+    quantity: sm.quantity,
+    status: sm.status,
+  }));
+
   return NextResponse.json({
     id: set.id,
     setNum: set.setNum,
@@ -46,15 +56,6 @@ export async function GET(
     imgUrl: set.imgUrl,
     numParts: set.numParts,
     parts,
+    minifigs,
   });
-}
-
-// DELETE /api/sets/[id] — remove set from collection
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  await prisma.set.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
 }

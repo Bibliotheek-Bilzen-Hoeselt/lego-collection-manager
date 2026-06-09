@@ -71,3 +71,24 @@ export async function fetchThemeName(themeId: number): Promise<string> {
     return "Unknown";
   }
 }
+
+export interface RebrickableMinifig {
+  id: number;
+  set_num: string;    // figNum, e.g. "fig-010913"
+  set_name: string;   // display name
+  quantity: number;
+  set_img_url: string | null;
+}
+
+export async function fetchSetMinifigs(
+  setNum: string
+): Promise<RebrickableMinifig[]> {
+  const normalized = setNum.includes("-") ? setNum : `${setNum}-1`;
+  const res = await fetch(
+    `${REBRICKABLE_BASE}/sets/${normalized}/minifigs/?page_size=100`,
+    { headers: getHeaders() }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.results ?? [];
+}

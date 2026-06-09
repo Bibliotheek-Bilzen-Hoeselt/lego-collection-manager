@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl" className={`${geist.variable} h-full antialiased`}>
       <body className="bg-gray-50 min-h-full font-sans">
-        <main className="max-w-2xl mx-auto px-4 pt-6 pb-28">{children}</main>
+        <main className="w-full px-4 pt-6 pb-28">{children}</main>
         <BottomNav />
       </body>
     </html>

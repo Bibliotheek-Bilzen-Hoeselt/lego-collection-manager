@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Download, CheckCircle, XCircle, MinusCircle, Package } from "lucide-react";
-import PartRow from "@/components/PartRow";
+import { ArrowLeft, Download, CheckCircle, XCircle, MinusCircle, Package, User } from "lucide-react";
+import PartCard from "@/components/PartCard";
+import MinifigRow from "@/components/MinifigRow";
 
 type Status = "PRESENT" | "MISSING" | "PARTIAL";
+type MinifigStatus = "PRESENT" | "MISSING";
 
 interface Part {
   setPartId: string;
@@ -21,6 +23,16 @@ interface Part {
   inventoryId: string | null;
 }
 
+interface Minifig {
+  setMinifigId: string;
+  figNum: string;
+  name: string;
+  numParts: number | null;
+  imgUrl: string | null;
+  quantity: number;
+  status: MinifigStatus;
+}
+
 interface SetDetail {
   id: string;
   setNum: string;
@@ -30,9 +42,11 @@ interface SetDetail {
   imgUrl: string | null;
   numParts: number | null;
   parts: Part[];
+  minifigs: Minifig[];
 }
 
 type Filter = "ALL" | "PRESENT" | "MISSING" | "PARTIAL";
+type View = "parts" | "minifigs";
 
 export default function SetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,33 +54,56 @@ export default function SetDetailPage() {
   const [set, setSet] = useState<SetDetail | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<View>("parts");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`/api/sets/${id}/parts`)
-      .then((r) => {
-        if (!r.ok) { router.push("/"); return null; }
-        return r.json();
-      })
+      .then((r) => { if (!r.ok) { router.push("/"); return null; } return r.json(); })
       .then((data) => { if (data) setSet(data); setLoading(false); });
   }, [id, router]);
+
+  const handlePartStatusChange = useCallback((setPartId: string, status: Status, quantityOwned: number) => {
+    setSet((prev) => prev ? {
+      ...prev,
+      parts: prev.parts.map((p) => p.setPartId === setPartId ? { ...p, status, quantityOwned } : p),
+    } : prev);
+  }, []);
+
+  const handleMinifigStatusChange = useCallback((setMinifigId: string, status: MinifigStatus) => {
+    setSet((prev) => prev ? {
+      ...prev,
+      minifigs: prev.minifigs.map((m) => m.setMinifigId === setMinifigId ? { ...m, status } : m),
+    } : prev);
+  }, []);
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-8 w-64 bg-gray-200 rounded-xl animate-pulse" />
         <div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
-        ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <div key={i} className="h-44 bg-gray-100 rounded-2xl animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!set) return null;
 
+  const present = set.parts.filter((p) => p.status === "PRESENT").length;
+  const missing = set.parts.filter((p) => p.status === "MISSING").length;
+  const partial = set.parts.filter((p) => p.status === "PARTIAL").length;
+  const missingMinifigs = set.minifigs.filter((m) => m.status === "MISSING").length;
+  const hasMissing = missing + partial + missingMinifigs > 0;
+
   const filteredParts = set.parts.filter((p) => {
-    const matchFilter = filter === "ALL" || p.status === filter;
+    const matchFilter =
+      filter === "ALL" ||
+      p.status === filter ||
+      (filter === "MISSING" && p.status === "PARTIAL");
     const matchSearch =
       !search ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -75,23 +112,24 @@ export default function SetDetailPage() {
     return matchFilter && matchSearch;
   });
 
-  const present = set.parts.filter((p) => p.status === "PRESENT").length;
-  const missing = set.parts.filter((p) => p.status === "MISSING").length;
-  const partial = set.parts.filter((p) => p.status === "PARTIAL").length;
-  const hasMissing = missing + partial > 0;
+  const filteredMinifigs = set.minifigs.filter((m) => {
+    const matchFilter = filter === "ALL" || m.status === filter;
+    const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
 
   const filterBtns: { key: Filter; label: string; count: number; icon: typeof CheckCircle; color: string }[] = [
-    { key: "ALL", label: "Alle", count: set.parts.length, icon: Package, color: "bg-gray-100 text-gray-700" },
-    { key: "PRESENT", label: "Aanwezig", count: present, icon: CheckCircle, color: "bg-green-100 text-green-700" },
-    { key: "PARTIAL", label: "Gedeeltelijk", count: partial, icon: MinusCircle, color: "bg-orange-100 text-orange-700" },
-    { key: "MISSING", label: "Vermist", count: missing, icon: XCircle, color: "bg-red-100 text-red-700" },
+    { key: "ALL", label: "Alle", count: view === "parts" ? set.parts.length : set.minifigs.length, icon: Package, color: "bg-gray-100 text-gray-700" },
+    { key: "PRESENT", label: "Aanwezig", count: view === "parts" ? present : set.minifigs.filter(m => m.status === "PRESENT").length, icon: CheckCircle, color: "bg-green-100 text-green-700" },
+    ...(view === "parts" ? [{ key: "PARTIAL" as Filter, label: "Gedeeltelijk", count: partial, icon: MinusCircle, color: "bg-orange-100 text-orange-700" }] : []),
+    { key: "MISSING", label: "Vermist", count: view === "parts" ? missing + partial : missingMinifigs, icon: XCircle, color: "bg-red-100 text-red-700" },
   ];
 
   return (
     <>
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <Link href="/" className="p-3 rounded-2xl bg-white border border-gray-200 min-w-[48px] min-h-[48px] flex items-center justify-center">
+        <Link href="/" className="p-3 rounded-2xl bg-white border border-gray-200 min-w-[48px] min-h-[48px] flex items-center justify-center flex-shrink-0">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </Link>
         <div className="min-w-0">
@@ -100,51 +138,65 @@ export default function SetDetailPage() {
         </div>
       </div>
 
-      {/* Set image + stats */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
+      {/* Set info card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5 flex flex-col sm:flex-row">
         {set.imgUrl && (
-          <div className="relative h-44 bg-gray-50">
+          <div className="relative h-44 sm:w-56 sm:h-auto bg-gray-50 flex-shrink-0">
             <Image src={set.imgUrl} alt={set.name} fill className="object-contain p-3" />
           </div>
         )}
-        <div className="p-4 flex gap-4 text-sm text-gray-600 flex-wrap">
-          {set.year && <span>📅 {set.year}</span>}
-          {set.theme && <span>🎨 {set.theme}</span>}
-          <span>🧩 {set.numParts} onderdelen</span>
-        </div>
-        {/* Progress bar */}
-        <div className="px-4 pb-4">
+        <div className="flex-1 p-4">
+          <div className="flex gap-4 text-sm text-gray-600 flex-wrap mb-4">
+            {set.year && <span>📅 {set.year}</span>}
+            {set.theme && <span>🎨 {set.theme}</span>}
+            <span>🧩 {set.numParts} onderdelen</span>
+            {set.minifigs.length > 0 && <span>👤 {set.minifigs.length} minifigs</span>}
+          </div>
           <div className="flex justify-between text-xs text-gray-500 mb-1">
             <span>{present} aanwezig</span>
             <span>{missing + partial} vermist/gedeeltelijk</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-            <div className="bg-green-400 h-full transition-all" style={{ width: `${(present / set.parts.length) * 100}%` }} />
-            <div className="bg-orange-300 h-full transition-all" style={{ width: `${(partial / set.parts.length) * 100}%` }} />
+            <div className="bg-green-400 h-full transition-all duration-300" style={{ width: `${(present / set.parts.length) * 100}%` }} />
+            <div className="bg-orange-300 h-full transition-all duration-300" style={{ width: `${(partial / set.parts.length) * 100}%` }} />
           </div>
+          {hasMissing && (
+            <a
+              href={`/api/export?setId=${set.id}`}
+              className="mt-4 inline-flex items-center gap-2 bg-yellow-400 text-yellow-900 font-bold py-3 px-5 rounded-xl text-sm min-h-[48px] active:scale-95"
+            >
+              <Download className="w-4 h-4" />
+              Export vermiste onderdelen (CSV)
+            </a>
+          )}
         </div>
       </div>
 
-      {/* Export button */}
-      {hasMissing && (
-        <a
-          href={`/api/export?setId=${set.id}`}
-          className="flex items-center justify-center gap-2 w-full py-4 mb-5 bg-yellow-400 text-yellow-900 font-bold rounded-2xl text-base min-h-[56px] active:scale-95"
-        >
-          <Download className="w-5 h-5" />
-          Export vermiste onderdelen (CSV)
-        </a>
+      {/* View switcher */}
+      {set.minifigs.length > 0 && (
+        <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-2xl">
+          <button onClick={() => { setView("parts"); setFilter("ALL"); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm min-h-[48px] transition-all ${view === "parts" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}>
+            <Package className="w-4 h-4" />
+            Onderdelen ({set.parts.length})
+          </button>
+          <button onClick={() => { setView("minifigs"); setFilter("ALL"); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm min-h-[48px] transition-all ${view === "minifigs" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}>
+            <User className="w-4 h-4" />
+            Minifigs ({set.minifigs.length})
+            {missingMinifigs > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{missingMinifigs}</span>
+            )}
+          </button>
+        </div>
       )}
 
       {/* Filter tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
         {filterBtns.map(({ key, label, count, icon: Icon, color }) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key)}
+          <button key={key} onClick={() => setFilter(key)}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap min-h-[48px] transition-all flex-shrink-0
-              ${filter === key ? color + " ring-2 ring-offset-1 ring-current" : "bg-white text-gray-500 border border-gray-200"}`}
-          >
+              ${filter === key ? color + " ring-2 ring-offset-1 ring-current" : "bg-white text-gray-500 border border-gray-200"}`}>
             <Icon className="w-4 h-4" />
             {label} ({count})
           </button>
@@ -154,20 +206,34 @@ export default function SetDetailPage() {
       {/* Search */}
       <input
         type="search"
-        placeholder="Onderdeel zoeken..."
+        placeholder={view === "parts" ? "Onderdeel zoeken..." : "Minifig zoeken..."}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-base mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400 min-h-[52px]"
       />
 
-      {/* Parts list */}
-      <div className="space-y-2">
-        {filteredParts.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">Geen onderdelen gevonden</p>
-        ) : (
-          filteredParts.map((part) => <PartRow key={part.setPartId} {...part} />)
-        )}
-      </div>
+      {/* Parts grid */}
+      {view === "parts" ? (
+        filteredParts.length === 0
+          ? <p className="text-center text-gray-400 py-10">Geen onderdelen gevonden</p>
+          : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              {filteredParts.map((part) => (
+                <PartCard key={part.setPartId} {...part} onStatusChange={handlePartStatusChange} />
+              ))}
+            </div>
+          )
+      ) : (
+        filteredMinifigs.length === 0
+          ? <p className="text-center text-gray-400 py-10">Geen minifigs gevonden</p>
+          : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {filteredMinifigs.map((fig) => (
+                <MinifigRow key={fig.setMinifigId} {...fig} onStatusChange={handleMinifigStatusChange} />
+              ))}
+            </div>
+          )
+      )}
     </>
   );
 }
