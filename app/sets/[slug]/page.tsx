@@ -52,6 +52,7 @@ export default function SetDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const [set, setSet] = useState<SetDetail | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("parts");
@@ -59,8 +60,12 @@ export default function SetDetailPage() {
 
   useEffect(() => {
     fetch(`/api/sets/${slug}/parts`)
-      .then((r) => { if (!r.ok) { router.push("/"); return null; } return r.json(); })
-      .then((data) => { if (data) setSet(data); setLoading(false); });
+      .then((r) => {
+        if (r.status === 404) { setNotFound(true); setLoading(false); return null; }
+        if (!r.ok) { router.push("/"); return null; }
+        return r.json();
+      })
+      .then((data) => { if (data) { setSet(data); setLoading(false); } });
   }, [slug, router]);
 
   const handlePartStatusChange = useCallback((setPartId: string, status: Status, quantityOwned: number) => {
@@ -87,6 +92,23 @@ export default function SetDetailPage() {
             <div key={i} className="h-44 bg-gray-100 rounded-2xl animate-pulse" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <Package className="w-20 h-20 text-gray-200 mb-6" />
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Set niet gevonden</h1>
+        <p className="text-gray-500 mb-8">Deze set bestaat niet of werd verwijderd uit de collectie.</p>
+        <Link
+          href="/"
+          className="bg-yellow-400 text-yellow-900 font-bold py-4 px-8 rounded-2xl text-base min-h-[56px] flex items-center gap-2"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Terug naar collectie
+        </Link>
       </div>
     );
   }
