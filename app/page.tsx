@@ -41,7 +41,7 @@ export default function HomePage() {
   return (
     <>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">🧱 Mijn LEGO-collectie</h1>
+        <h1 className="text-2xl font-bold text-gray-900">🧱 Bibliotheek Bilzen-Hoeselt LEGO-collectie</h1>
         <p className="text-gray-500 text-sm mt-1">{sets.length} sets</p>
       </header>
 
