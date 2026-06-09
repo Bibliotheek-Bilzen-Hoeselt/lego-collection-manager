@@ -227,7 +227,7 @@ export default function SetDetailPage() {
       )}
 
       {/* Filter tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
+      <div className="flex gap-2 overflow-x-auto pb-1 mb-4 px-1 -mx-1">
         {filterBtns.map(({ key, label, count, icon: Icon, color }) => (
           <button key={key} onClick={() => setFilter(key)}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap min-h-[48px] transition-all flex-shrink-0
