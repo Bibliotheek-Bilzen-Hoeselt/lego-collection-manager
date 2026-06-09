@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Lock, LogIn } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,8 +18,7 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      router.push("/");
-      router.refresh();
+      window.location.replace("/");
     } else {
       setError("Ongeldig wachtwoord. Probeer opnieuw.");
       setPassword("");
