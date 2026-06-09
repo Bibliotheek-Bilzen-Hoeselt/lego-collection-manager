@@ -173,7 +173,7 @@ export default function MissingPage() {
                       <p className={`text-sm font-bold ${item.status === "MISSING" ? "text-red-500" : "text-orange-500"}`}>
                         {item.status === "MISSING" ? "Vermist" : "Gedeeltelijk"}
                       </p>
-                      <p className="text-xs text-gray-500">{item.quantityOwned}/{item.quantity}</p>
+                      <p className="text-xs text-gray-500">{item.quantity - item.quantityOwned} van {item.quantity} vermist</p>
                     </div>
                   </div>
                 ))}

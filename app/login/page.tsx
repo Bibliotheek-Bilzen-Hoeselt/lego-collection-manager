@@ -40,7 +40,7 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-          <div className="relative">
+          <div className="relative" suppressHydrationWarning>
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
@@ -48,6 +48,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoFocus
+              suppressHydrationWarning
               required
               className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 text-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 min-h-[60px]"
             />

@@ -93,11 +93,24 @@ export default function SetDetailPage() {
 
   if (!set) return null;
 
+  // Count pieces (quantity), not types
+  const totalPieces = set.parts.reduce((acc, p) => acc + p.quantity, 0);
+  const presentPieces = set.parts.reduce((acc, p) => acc + (p.status === "PRESENT" ? p.quantity : p.quantityOwned), 0);
+  const missingPieces = set.parts.reduce((acc, p) => {
+    if (p.status === "MISSING") return acc + p.quantity;
+    if (p.status === "PARTIAL") return acc + (p.quantity - p.quantityOwned);
+    return acc;
+  }, 0);
+  const partialPieces = set.parts.reduce((acc, p) => {
+    if (p.status === "PARTIAL") return acc + (p.quantity - p.quantityOwned);
+    return acc;
+  }, 0);
+  // Type counts (for filter buttons)
   const present = set.parts.filter((p) => p.status === "PRESENT").length;
   const missing = set.parts.filter((p) => p.status === "MISSING").length;
   const partial = set.parts.filter((p) => p.status === "PARTIAL").length;
   const missingMinifigs = set.minifigs.filter((m) => m.status === "MISSING").length;
-  const hasMissing = missing + partial + missingMinifigs > 0;
+  const hasMissing = missingPieces + missingMinifigs > 0;
 
   const filteredParts = set.parts.filter((p) => {
     const matchFilter =
@@ -122,7 +135,7 @@ export default function SetDetailPage() {
     { key: "ALL", label: "Alle", count: view === "parts" ? set.parts.length : set.minifigs.length, icon: Package, color: "bg-gray-100 text-gray-700" },
     { key: "PRESENT", label: "Aanwezig", count: view === "parts" ? present : set.minifigs.filter(m => m.status === "PRESENT").length, icon: CheckCircle, color: "bg-green-100 text-green-700" },
     ...(view === "parts" ? [{ key: "PARTIAL" as Filter, label: "Gedeeltelijk", count: partial, icon: MinusCircle, color: "bg-orange-100 text-orange-700" }] : []),
-    { key: "MISSING", label: "Vermist", count: view === "parts" ? missing + partial : missingMinifigs, icon: XCircle, color: "bg-red-100 text-red-700" },
+    { key: "MISSING", label: "Vermist", count: view === "parts" ? missingPieces : missingMinifigs, icon: XCircle, color: "bg-red-100 text-red-700" },
   ];
 
   return (
@@ -153,12 +166,12 @@ export default function SetDetailPage() {
             {set.minifigs.length > 0 && <span>👤 {set.minifigs.length} minifigs</span>}
           </div>
           <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>{present} aanwezig</span>
-            <span>{missing + partial} vermist/gedeeltelijk</span>
+            <span>{presentPieces} stuks aanwezig</span>
+            <span>{missingPieces} stuks vermist</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-            <div className="bg-green-400 h-full transition-all duration-300" style={{ width: `${(present / set.parts.length) * 100}%` }} />
-            <div className="bg-orange-300 h-full transition-all duration-300" style={{ width: `${(partial / set.parts.length) * 100}%` }} />
+            <div className="bg-green-400 h-full transition-all duration-300" style={{ width: `${(presentPieces / totalPieces) * 100}%` }} />
+            <div className="bg-orange-300 h-full transition-all duration-300" style={{ width: `${(partialPieces / totalPieces) * 100}%` }} />
           </div>
           {hasMissing && (
             <a

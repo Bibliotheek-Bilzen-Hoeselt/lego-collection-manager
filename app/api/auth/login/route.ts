@@ -4,14 +4,14 @@ import { checkPassword, signToken, COOKIE_NAME, COOKIE_MAX_AGE } from "@/lib/aut
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
 
-  if (!password || !checkPassword(password)) {
-    // Small delay to slow brute-force
+  if (!password || !(await checkPassword(password))) {
     await new Promise((r) => setTimeout(r, 500));
     return NextResponse.json({ error: "Ongeldig wachtwoord" }, { status: 401 });
   }
 
+  const token = await signToken();
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE_NAME, signToken(), {
+  res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

@@ -12,11 +12,15 @@ export async function GET() {
   });
 
   const result = sets.map((s) => {
-    const missingParts = s.setParts.filter(
-      (sp) => sp.inventories[0]?.status === "MISSING" || sp.inventories[0]?.status === "PARTIAL"
-    ).length;
+    const missingPieces = s.setParts.reduce((acc, sp) => {
+      const inv = sp.inventories[0];
+      if (!inv) return acc;
+      if (inv.status === "MISSING") return acc + sp.quantity;
+      if (inv.status === "PARTIAL") return acc + (sp.quantity - inv.quantityOwned);
+      return acc;
+    }, 0);
     const missingMinifigs = s.setMinifigs.filter(
-      (sm) => sm.status === "MISSING" || sm.status === "PARTIAL"
+      (sm) => sm.status === "MISSING"
     ).length;
     return {
       id: s.id,
@@ -27,8 +31,8 @@ export async function GET() {
       numParts: s.numParts,
       imgUrl: s.imgUrl,
       addedAt: s.addedAt,
-      totalParts: s.setParts.length,
-      missingParts: missingParts + missingMinifigs,
+      totalParts: s.setParts.reduce((acc, sp) => acc + sp.quantity, 0),
+      missingParts: missingPieces + missingMinifigs,
     };
   });
 

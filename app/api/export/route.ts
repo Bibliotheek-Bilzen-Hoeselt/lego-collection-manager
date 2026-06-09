@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Geen vermiste onderdelen gevonden", { status: 200 });
   }
 
-  const header = ["Type", "Set nummer", "Set naam", "Nr", "Naam", "Kleur", "Benodigde aantal", "Aanwezig aantal", "Status"];
+  const header = ["Type", "Set nummer", "Set naam", "Nr", "Naam", "Kleur", "Benodigde aantal", "Aanwezig aantal", "Afwezig aantal", "Status"];
 
   const partRows = inventories.map((inv) => toRow([
     "Onderdeel",
@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     inv.setPart.part.color,
     inv.setPart.quantity,
     inv.quantityOwned,
+    inv.setPart.quantity - inv.quantityOwned,
     inv.status,
   ]));
 
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
     "-",
     sm.quantity,
     0,
+    sm.quantity,
     sm.status,
   ]));
 
